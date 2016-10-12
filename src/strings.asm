@@ -18,11 +18,15 @@
 #    size_t len = strlen(str);
 #    memcpy(dest, src, len);
 strcpy:
-	pushw($ra)
+	addi $sp, $sp, -8
+	sw $ra, 4($sp)
+	sw $a2, 0($sp)
 	jal strlen
 	move $a2, $v0
 	jal memcpy
-	popw($ra)
+	lw $a2, 0($sp)
+	lw $ra, 4($sp)
+	addi $sp, $sp, 8
 	jr $ra
 
 # String Length

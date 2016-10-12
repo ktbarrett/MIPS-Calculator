@@ -9,9 +9,9 @@
 # but it's definitely UB.
 #
 .macro writeString (%string)
-la $a0, %string
-li $v0, 4
-syscall
+	la $a0, %string
+	li $v0, 4
+	syscall
 .end_macro
 
 # Get String from Console
@@ -23,16 +23,16 @@ syscall
 # caveat: length specification acts like fgets. Buffer overruns are undefined behavior.
 #
 .macro getString(%string, %len)
-la $a0, %string
-li $a1, %len
-li $v0, 8
-syscall
+	la $a0, %string
+	li $a1, %len
+	li $v0, 8
+	syscall
 .end_macro
 
 # Exit without return value
 .macro exit
-li $v0, 10
-syscall
+	li $v0, 10
+	syscall
 .end_macro
 
 # Get Integer from Console
@@ -41,9 +41,9 @@ syscall
 # @clobbers: v0
 #
 .macro getInteger (%r)
-li $v0, 5
-syscall
-move %r, $v0
+	li $v0, 5
+	syscall
+	move %r, $v0
 .end_macro
 
 # Print Integer to Console
@@ -52,9 +52,9 @@ move %r, $v0
 # @clobbers: v0, a0
 #
 .macro printInteger (%r)
-move $a0, %r
-li $v0, 1
-syscall
+	move $a0, %r
+	li $v0, 1
+	syscall
 .end_macro
 
 ##### SMALL INLINE FUNCTIONS #####
@@ -64,19 +64,9 @@ syscall
 # @ param 1: register to push onto stack
 #
 # push word
-.macro pushw (%r)
-subi $sp, $sp, 4
-sw %r, ($sp)
-.end_macro
-# push halfword
-.macro pushh (%r)
-subi $sp, $sp, 2
-sh %r, ($sp)
-.end_macro
-# push byte
-.macro pushb (%r)
-subi $sp, $sp, 1
-sb %r, 0($sp)
+.macro push (%r)
+	subi $sp, $sp, 4
+	sw %r, ($sp)
 .end_macro
 
 # Stack Pop
@@ -84,17 +74,7 @@ sb %r, 0($sp)
 # @param 1: register to pop value into
 #
 # pop word
-.macro popw (%r)
-lw %r, 0($sp)
-addi $sp, $sp, 4
-.end_macro
-# pop halfword
-.macro poph (%r)
-lh %r, 0($sp)
-addi $sp, $sp, 2
-.end_macro
-# pop byte
-.macro popb (%r)
-lb %r, 0($sp)
-addi $sp, $sp, 1
+.macro pop (%r)
+	lw %r, 0($sp)
+	addi $sp, $sp, 4
 .end_macro
