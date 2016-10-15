@@ -1,6 +1,6 @@
 
-.include "memory.asm"
-.include "macros.asm"
+#.include "memory.asm"
+#.include "macros.asm"
 
 # String copy
 #
@@ -18,15 +18,14 @@
 #    size_t len = strlen(str);
 #    memcpy(dest, src, len);
 strcpy:
-	addi $sp, $sp, -8
-	sw $ra, 4($sp)
-	sw $a2, 0($sp)
-	jal strlen
-	move $a2, $v0
-	jal memcpy
-	lw $a2, 0($sp)
-	lw $ra, 4($sp)
-	addi $sp, $sp, 8
+	move $t0, $a0
+	move $t1, $a1
+_strcpy_L1:
+	lb $t2, ($t1)
+	sb $t2, ($t0)
+	addi $t0, $t0, 1
+	addi $t1, $t1, 1
+	bne $t2, $zero _strcpy_L1
 	jr $ra
 
 # String Length

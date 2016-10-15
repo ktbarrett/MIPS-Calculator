@@ -13,6 +13,11 @@
 	li $v0, 4
 	syscall
 .end_macro
+.macro writeStringReg(%stringr)
+	move $a0, %stringr
+	li $v0, 4
+	syscall
+.end_macro
 
 # Get String from Console
 #
@@ -65,7 +70,7 @@
 #
 # push word
 .macro push (%r)
-	subi $sp, $sp, 4
+	addi $sp, $sp, -4
 	sw %r, ($sp)
 .end_macro
 
@@ -77,4 +82,18 @@
 .macro pop (%r)
 	lw %r, 0($sp)
 	addi $sp, $sp, 4
+.end_macro
+
+.macro cmoveq(%dest, %src, %r1, %r2)
+	push($t0)
+	sne $t0, %r1, %r2
+	movz %dest, %src, $t0
+	pop($t0)
+.end_macro
+
+.macro cmovne(%dest, %src, %r1, %r2)
+	push($t0)
+	seq $t0, %r1, %r2
+	movz %dest, %src, $t0
+	pop($t0)
 .end_macro

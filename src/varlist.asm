@@ -1,6 +1,6 @@
-.include "strings.asm"
-.include "memory.asm"
-.include "macros.asm"
+#.include "strings.asm"
+#.include "memory.asm"
+#.include "macros.asm"
 
 .data
 
@@ -9,6 +9,8 @@ _varlist_ptr: .space 4
 _varlist_end: .space 4
 
 .text
+
+j _testvarlist
 
 # initializes varlist
 .macro initvarlist()
@@ -38,13 +40,15 @@ _varlist_end: .space 4
 #    }
 _findvar:
 	# save
-	addi $sp, $sp, -12
-	sw $ra, 8($sp)
-	sw $s0, 4($sp)
-	sw $s1, 0($sp)
-	la $a0, _varlist_ptr
+	addi $sp, $sp, -20
+	sw $ra, 16($sp)
+	sw $s0, 12($sp)
+	sw $s1, 8($sp)
+	sw $a0, 4($sp)
+	sw $a1, 0($sp)
+	lw $a0, _varlist_ptr
 	move $s1, $a0
-	la $s0, _varlist_end
+	lw $s0, _varlist_end
 _findvar_L1:
 	# align
 	li $a1, 4
@@ -63,7 +67,7 @@ _findvar_L1:
 	add $a0, $a0, $v0
 	addi $a0, $a0, 1
 	b _findvar_L1
-_fingvar_notfound:
+_findvar_notfound:
 	li $v0, 1
 	b _findvar_exit
 _findvar_found:
@@ -71,10 +75,12 @@ _findvar_found:
 	addi $v1, $a0, -4
 _findvar_exit:	# reload
 	move $a0, $s1
-	lw $s1, 0($sp)
-	lw $s0, 4($sp)
-	lw $ra, 8($sp)
-	addi $sp, $sp, 12 
+	lw $a1, 0($sp)
+	lw $a0, 4($sp)
+	lw $s1, 8($sp)
+	lw $s0, 12($sp)
+	lw $ra, 16($sp)
+	addi $sp, $sp, 20
 	jr $ra
 	
 # Get Variable
@@ -94,7 +100,7 @@ _findvar_exit:	# reload
 getvar:
 	push($ra)
 	jal _findvar
-	bne $v0, $zero, _getvar_L1
+	beq $v0, $zero, _getvar_L1
 	lw $v0, ($v0)
 _getvar_L1:
 	pop($ra)
@@ -130,6 +136,7 @@ setvar: # save
 	# add space for nul-terminator and int
 	addi $a0, $v0, 5
 	# align up to word boundary
+	li $a1, 4
 	jal alignup
 	# sbrk - allocate memory
 	move $a0, $v0
@@ -140,8 +147,8 @@ setvar: # save
 	sw $a0, _varlist_end
 	move $v1, $v0 # save pointer for saving integer
 	# strcpy into list
-	addi $a0, $v0, 4
-	pop($a1)
+	addi $a1, $v0, 4
+	pop($a0)
 	jal strcpy
 	move $a0, $a1
 _setvar_L1: # reload
@@ -151,3 +158,15 @@ _setvar_L1: # reload
 	addi $sp, $sp, 8
 	jr $ra
 	
+_testvarlist:
+
+	writeString(testvarlist)
+	initvarlist()
+	la $a0, test
+	lw $a1, testasnum
+	jal setvar
+	jal getvar
+	la $s0, okay
+	la $s1, notokay
+	cmovne($s0, $s1, $v0, $a0)
+	writeStringReg($s0)

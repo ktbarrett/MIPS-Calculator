@@ -3,7 +3,7 @@ from math import ceil
 def generateBitMap(n):
     n = [bool(x) for x in n]
     n.extend([False]*int(8*ceil(len(n)/8.0) - len(n)))
-    chunked = (n[8*i:7+8*i] for i in range(len(n)//8))
+    chunked = (n[8*i:8*(i+1)] for i in range(len(n)//8))
     bytearray = [sum([2**i for i, x in enumerate(n8) if x]) for n8 in chunked]
     return bytearray
 

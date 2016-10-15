@@ -16,6 +16,7 @@ alignup:
 	neg $t1, $a1
 	add $t0, $a0, $t0
 	and $v0, $t0, $t1
+	jr $ra
 
 # Copy Memory
 #
