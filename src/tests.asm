@@ -1,15 +1,14 @@
 .globl main
-.include "ctypes.asm"
-.include "memory.asm"
 .include "macros.asm"
-.include "strings.asm"
-.include "varlist.asm"
-
 .data
+
 test: .asciiz "1234567890"
 copybuffer: .space 11
 .align 2
 testasnum: .word 1234567890
+test2: .asciiz "Memelord Alpha"
+.align 2
+test2num: .word 0x5643AC47
 
 okay: .asciiz "Okay\n"
 notokay: .asciiz "Failed\n"
@@ -60,7 +59,7 @@ _L1:
 	jal strcmp
 	la $s0, okay
 	la $s1, notokay
-	movz $s0, $s1, $v0
+	movn $s0, $s1, $v0
 	writeStringReg($s0)
 	
 	# test strlen
@@ -86,14 +85,18 @@ _L1:
 	writeStringReg($s0)
 	
 	writeString(testvarlist)
-	initvarlist()
+	jal initvarlist
+	la $a0, test2
+	lw $a1, test2num
+	jal setvar
 	la $a0, test
 	lw $a1, testasnum
 	jal setvar
 	jal getvar
 	la $s0, okay
 	la $s1, notokay
-	cmovne($s0, $s1, $v0, $a0)
+	cmovne($s0, $s1, $v0, $zero)
+	cmovne($s0, $s1, $v1, $a1)
 	writeStringReg($s0)
 	
 	#stop

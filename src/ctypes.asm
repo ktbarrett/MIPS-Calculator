@@ -1,4 +1,5 @@
-
+.globl isdigit isspace isalpha isalnum str2num
+.include "macros.asm"
 .data
 
 # bit maps created with python script
@@ -44,11 +45,10 @@ isalnum:
 #        num = num * 10 + c - '0';
 str2num:
 	# enter
-	addi $sp, $sp, -16
-	sw $ra, 12($sp)
-	sw $a0, 8($sp)
-	sw $s0, 4($sp)
-	sw $s1, 0($sp)
+	push($ra)
+	push($a0)
+	push($s0)
+	push($s1)
 	# setup variables
 	li $s1, 0
 	move $s0, $a0
@@ -69,10 +69,9 @@ _str2num_L1cond:
 _str2num_done:
 	# leave
 	move $v0, $s1
-	lw $s1, 0($sp)
-	lw $s0, 4($sp)
-	lw $a0, 8($sp)
-	lw $ra, 12($sp)
-	addi $sp, $sp, 16
+	pop($a0)
+	pop($s0)
+	pop($s1)
+	pop($ra)
 	jr $ra
 	

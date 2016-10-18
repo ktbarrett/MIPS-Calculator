@@ -1,11 +1,4 @@
-
-#.include "memory.asm"
-#.include "macros.asm"
-
-# String copy
-#
-# @param a0: nul-terminated string source
-# @param a1: destination buffer
+.globl strcpy strlen strcmp
 .data
 
 .text
@@ -15,8 +8,7 @@
 #    Additionally, buffer overruns are undefined.
 #
 # C:
-#    size_t len = strlen(str);
-#    memcpy(dest, src, len);
+#    while ((c = src++) != '\0') dest++ = c;
 strcpy:
 	move $t0, $a0
 	move $t1, $a1
@@ -53,7 +45,7 @@ _strlen_L1:
 #
 # @param a0: string 1
 # @param a1: string 2
-# @return v0: 0 if no match, 1 otherwise
+# @return v0: 0 if match, 1 otherwise
 #
 # caveat: If the string isn't nul-terminated, behavior is undefined.
 #

@@ -1,3 +1,4 @@
+.globl alignup memcpy
 .data
 
 .text

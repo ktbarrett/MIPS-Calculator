@@ -1,7 +1,6 @@
-#.include "strings.asm"
-#.include "memory.asm"
-#.include "macros.asm"
 
+.globl getvar setvar initvarlist
+.include "macros.asm"
 .data
 
 .align 2
@@ -10,16 +9,18 @@ _varlist_end: .space 4
 
 .text
 
-j _testvarlist
-
 # initializes varlist
-.macro initvarlist()
+initvarlist:
+	push($a0)
+	push($v0)
 	li $v0, 9
 	li $a0, 0
 	syscall
 	sw $v0, _varlist_ptr
 	sw $v0, _varlist_end
-.end_macro
+	pop($v0)
+	pop($a0)
+	jr $ra
 
 # Find Variable (non-extern)
 #  finds list node with given variable name 
@@ -40,14 +41,13 @@ j _testvarlist
 #    }
 _findvar:
 	# save
-	addi $sp, $sp, -20
-	sw $ra, 16($sp)
-	sw $s0, 12($sp)
-	sw $s1, 8($sp)
-	sw $a0, 4($sp)
-	sw $a1, 0($sp)
-	lw $a0, _varlist_ptr
+	push($ra)
+	push($s0)
+	push($s1)
+	push($a0)
+	push($a1)
 	move $s1, $a0
+	lw $a0, _varlist_ptr
 	lw $s0, _varlist_end
 _findvar_L1:
 	# align
@@ -61,7 +61,7 @@ _findvar_L1:
 	move $a1, $s1
 	jal strcmp
 	# if match, found variable
-	bne $zero, $v0, _findvar_found
+	beq $zero, $v0, _findvar_found
 	# else add strlen + 1(nul-term) to pointer
 	jal strlen
 	add $a0, $a0, $v0
@@ -74,13 +74,11 @@ _findvar_found:
 	li $v0, 0
 	addi $v1, $a0, -4
 _findvar_exit:	# reload
-	move $a0, $s1
-	lw $a1, 0($sp)
-	lw $a0, 4($sp)
-	lw $s1, 8($sp)
-	lw $s0, 12($sp)
-	lw $ra, 16($sp)
-	addi $sp, $sp, 20
+	pop($a1)
+	pop($a0)
+	pop($s1)
+	pop($s0)
+	pop($ra)
 	jr $ra
 	
 # Get Variable
@@ -100,8 +98,8 @@ _findvar_exit:	# reload
 getvar:
 	push($ra)
 	jal _findvar
-	beq $v0, $zero, _getvar_L1
-	lw $v0, ($v0)
+	bne $v0, $zero, _getvar_L1
+	lw $v1, ($v1)
 _getvar_L1:
 	pop($ra)
 	jr $ra
@@ -124,9 +122,8 @@ _getvar_L1:
 #    *loc = value;
 #
 setvar: # save
-	addi $sp, $sp, -8
-	sw $ra, 4($sp)
-	sw $a1, 0($sp)
+	push($ra)
+	push($a1)
 	jal _findvar
 	beq $v0, $zero, _setvar_L1
 	## alloc new space
@@ -145,28 +142,14 @@ setvar: # save
 	# change end pointer
 	add $a0, $a0, $v0
 	sw $a0, _varlist_end
-	move $v1, $v0 # save pointer for saving integer
 	# strcpy into list
-	addi $a1, $v0, 4
-	pop($a0)
+	addi $a0, $v0, 4
+	pop($a1)
 	jal strcpy
-	move $a0, $a1
+	move $a0, $a1 # src back to $a0
+	move $v1, $v0
 _setvar_L1: # reload
-	lw $a1, 0($sp)
+	pop($a1)
+	pop($ra)
 	sw $a1, ($v1) # save new integer in variable node
-	lw $ra, 4($sp)
-	addi $sp, $sp, 8
 	jr $ra
-	
-_testvarlist:
-
-	writeString(testvarlist)
-	initvarlist()
-	la $a0, test
-	lw $a1, testasnum
-	jal setvar
-	jal getvar
-	la $s0, okay
-	la $s1, notokay
-	cmovne($s0, $s1, $v0, $a0)
-	writeStringReg($s0)
