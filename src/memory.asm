@@ -1,4 +1,4 @@
-.globl alignup memcpy
+.globl alignup memcpy memset
 .data
 
 .text
@@ -43,4 +43,28 @@ _memcpy_L1:
 	addi $t1, $t1, 1
 	bne $t0, $t2 _memcpy_L1
 _memcpy_L2:
+	jr $ra
+
+# Sets Memory to specified value
+#
+# @param $a0: (addr) address of starting location
+# @param $a1: (v) value to set each byte to
+# @param $a2: (i) number of iterations
+# @param $a3: (step) next iteration every n bytes
+#
+# C:
+#    for (;i-- > 0; addr += step) *addr = v;
+memset:
+	# a3, $a1 const
+	# move $a0, $a2 into temps
+	move $t0, $a0
+	move $t2, $a2
+	ble $t2, $zero, _memset_L2 # ensure good args i > 0
+_memset_L1:
+	# store value, incrememnt pointer,take step
+	sb $a1, ($t0)
+	add $t0, $t0, $a3
+	addi $t2, $t2, -1
+	bne $t2, $zero, _memset_L1
+_memset_L2:
 	jr $ra

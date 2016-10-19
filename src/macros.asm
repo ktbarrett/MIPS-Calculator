@@ -185,7 +185,7 @@
 #
 .macro getString(%string, %len)
 	push($a0)
-	puhs($a1)
+	push($a1)
 	push($v0)
 	la $a0, %string
 	li $a1, %len

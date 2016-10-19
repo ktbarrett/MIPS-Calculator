@@ -9,6 +9,7 @@ testasnum: .word 1234567890
 test2: .asciiz "Memelord Alpha"
 .align 2
 test2num: .word 0x5643AC47
+lexbuf: .space 64
 
 okay: .asciiz "Okay\n"
 notokay: .asciiz "Failed\n"
@@ -18,6 +19,7 @@ teststrcpy: .asciiz "Testing strcpy... "
 teststrcmp: .asciiz "Testing strcmp... "
 teststr2num: .asciiz "Testing str2num... "
 testvarlist: .asciiz "Testing var list operations... "
+testlexer: .asciiz "Testing lexer...\n"
 nl: .asciiz "\n"
 space: .asciiz " "
 
@@ -98,6 +100,11 @@ _L1:
 	cmovne($s0, $s1, $v0, $zero)
 	cmovne($s0, $s1, $v1, $a1)
 	writeStringReg($s0)
+	
+	writeString(testlexer)
+	getString(lexbuf, 64)
+	la $a0, lexbuf
+	jal lexer
 	
 	#stop
 	exit()
