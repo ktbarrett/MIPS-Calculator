@@ -1,37 +1,14 @@
-.globl lexer token_starts token_ends tokens
+.globl lexer token_values token_ends token_types
 .include "params.h"
 .include "macros.asm"
 .data
 
 .align 2
-token_starts: .space TOKEN_ARRAYS_SZ
-token_ends: .space TOKEN_ARRAYS_SZ
-tokens: .space TOKEN_ARRAYS_SZ
-_lexer_errormsg: .asciiz "Lexer Error"
+token_values: .space MAX_EXPR_ARRAY_SZ
+token_ends: .space MAX_EXPR_ARRAY_SZ
+token_types: .space MAX_EXPR_ARRAY_SZ
 
 .text
-
-# clears token arrays
-clearlex:
-	push($ra)
-	push($a0)
-	push($a1)
-	push($a2)
-	push($a3)
-	la $a0, token_starts
-	move $a1, $zero
-	li $a2, TOKEN_ARRAYS_SZ
-	li $a3, 1
-	jal memset
-	la $a0, token_ends
-	jal memset
-	pop($a3)
-	pop($a2)
-	pop($a1)
-	pop($a0)
-	pop($ra)
-	jr $ra
-
 
 _lexer_whichop:
 	li $v0, TOK_ASS
@@ -69,8 +46,8 @@ lexer:
 	push($s0)
 	push($s1)
 	push($a0)
-	addi $s0, $a0, -1
-	move $s1, $zero
+	addi $s0, $a0, -1 # to offset addition at beginning of loop
+	move $s1, $zero # token array index
 _lexer_loop:
 	addi $s0, $s0, 1
 	lb $a0, ($s0)
@@ -95,10 +72,20 @@ _lexer_notnumber:
 	jal _lexer_variable
 	j _lexer_loop
 _lexer_notvar:
+	# if paren
+	li $t0, CHR_LPAR
+	seq $t1, $a0, $t0
+	li $t0 CHR_RPAR
+	seq $t1, $a0, $t0
+	beq $zero, $t1, _lexer_notparens
+	jal _lexer_paren
+	j _lexer_loop
+_lexer_notparens:
+	# is end or shits bork
 	jal isend
 	beq $v0, $zero, _lexer_error
 	li $t0, TOK_END
-	sw $t0, tokens($s1)
+	sw $t0, token_types($s1)
 	move $v0, $zero # done, load okay and leave
 	j _lexer_leave
 _lexer_error:
@@ -109,16 +96,23 @@ _lexer_leave:
 	pop($s0)
 	pop($ra)
 	jr $ra
+
+# is paren
+_lexer_paren:
+	li $t0, CHR_LPAR
+	li $t1, TOK_LPAR
+	li $t2, TOK_RPAR
+	cmovne($t1, $t2, $a0, $t0)
+	sw $t1, token_types($s1)
+	addi $s1, $s1, 4
+	jr $ra
+	
 	
 # isoperator() -> capture, break
 _lexer_operator:
 	push($ra)
-	sw $s0, token_starts($s1)
-	addi $t0, $s0, 1
-	sw $t0, token_ends($s1)
-	lb $a0, ($s0)
 	jal _lexer_whichop
-	sw $v0, tokens($s1)
+	sw $v0, token_types($s1)
 	addi $s1, $s1, 4
 	pop($ra)
 	jr $ra
@@ -127,48 +121,54 @@ _lexer_operator:
 #    isdigit() -> consume isdigit(), isspace() != 1 || isoperator() != 1 -> parse error
 _lexer_number:
 	push($ra)
-	sw $s0, token_starts($s1)
+	push($s2)
+	move $s2, $s0 # save beginning of string
 	addi $s0, $s0, 1
 	lb $a0, ($s0)
 _lexer_number_L1:
-	jal isdigit
+	jal isdigit # grab isdigit()
 	beq $zero, $v0, _lexer_number_L2
 	addi $s0, $s0, 1
 	lb $a0, ($s0)
 	j _lexer_number_L1
 _lexer_number_L2:
-	sw $s0, token_ends($s1)
+	# next operator must be a space or operator
 	jal isspace
 	bne $v0, $zero, _lexer_number_okay
 	jal isoperator
 	bne $v0, $zero, _lexer_number_okay
 	pop($ra)
-	j _lexer_error
+	j _lexer_error # if it isn't, error
 _lexer_number_okay:
-	addi $s0, $s0, -1
 	li $t0, TOK_NUM
-	sw $t0, tokens($s1)
+	sw $t0, token_types($s1)
+	move $a0, $s2
+	jal str2num # convert number and save
+	sw $v0, token_values($s1)
 	addi $s1, $s1, 4
+	pop($s2)
 	pop($ra)
 	jr $ra
 
 #    isvarstart() -> consume isvarname()
 _lexer_variable:
 	push($ra)
-	sw $s0, token_starts($s1)
+	# store start of variable 
+	sw $s0, token_values($s1)
 	addi $s0, $s0, 1
 	lb $a0, ($s0)
 _lexer_variable_L1:
-	jal isvarname
+	jal isvarname # grab everything up to a space or operator, etc.
 	beq $zero, $v0, _lexer_variable_L2
 	addi $s0, $s0, 1
 	lb $a0, ($s0)
 	j _lexer_variable_L1
 _lexer_variable_L2:
+	# store the end of the variable name and type
 	sw $s0, token_ends($s1)
 	li $t0, TOK_VAR
-	sw $t0, tokens($s1)
+	sw $t0, token_types($s1)
 	addi $s1, $s1, 4
-	addi $s0, $s0, -1
+	addi $s0, $s0, -1 # backup to end of variable
 	pop($ra)
 	jr $ra
