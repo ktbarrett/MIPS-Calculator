@@ -33,6 +33,23 @@ clearlex:
 	jr $ra
 
 
+_lexer_whichop:
+	li $v0, TOK_ASS
+	li $t0, TOK_ADD
+	li $t1, 43 #+
+	cmovne($v0, $t0, $a0, $t1)
+	li $t0, TOK_SUB
+	li $t1, 45 #-
+	cmovne($v0, $t0, $a0, $t1)
+	li $t0, TOK_MUL
+	li $t1, 42 #*
+	cmovne($v0, $t0, $a0, $t1)
+	li $t0, TOK_DIV
+	li $t1, 47 #/
+	cmovne($v0, $t0, $a0, $t1)
+	jr $ra
+
+
 # Tokenizes input string based upon lexing rules
 #
 # @param a0: address of string to lex
@@ -99,8 +116,9 @@ _lexer_operator:
 	sw $s0, token_starts($s1)
 	addi $t0, $s0, 1
 	sw $t0, token_ends($s1)
-	li $t0, TOK_OP
-	sw $t0, tokens($s1)
+	lb $a0, ($s0)
+	jal _lexer_whichop
+	sw $v0, tokens($s1)
 	addi $s1, $s1, 4
 	pop($ra)
 	jr $ra
