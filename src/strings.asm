@@ -67,4 +67,8 @@ _strcmp_L1:
 	addi $v0, $v0, 1
 _strcmp_L2:
 	jr $ra
-	
+
+
+strip:
+
+lowercase:

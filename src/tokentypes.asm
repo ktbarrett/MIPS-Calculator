@@ -1,5 +1,5 @@
 .globl isdigit isspace isvarstart isvarname isoperator isend str2num
-.include "macros.asm"
+.include "macros.h"
 .include "params.h"
 .data
 
@@ -83,9 +83,9 @@ _str2num_L1cond:
 _str2num_done:
 	# leave
 	move $v0, $s1
-	pop($a0)
-	pop($s0)
 	pop($s1)
+	pop($s0)
+	pop($a0)
 	pop($ra)
 	jr $ra
 	

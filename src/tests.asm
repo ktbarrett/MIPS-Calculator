@@ -1,5 +1,5 @@
 .globl main
-.include "macros.asm"
+.include "macros.h"
 .data
 
 test: .asciiz "1234567890"

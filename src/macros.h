@@ -38,113 +38,15 @@
 	pop($t0)
 .end_macro
 
-##### LAZINESS-INSPIRED AUTISM #####
-
-# spill temp variables onto the stack
-.macro spilltemps()
-	push($t0)
-	push($t1)
-	push($t2)
-	push($t3)
-	push($t4)
-	push($t5)
-	push($t6)
-	push($t7)
-	push($t8)
-	push($t9)
-.end_macro
-# load temp variables from stack
-.macro loadtemps()
-	pop($t0)
-	pop($t1)
-	pop($t2)
-	pop($t3)
-	pop($t4)
-	pop($t5)
-	pop($t6)
-	pop($t7)
-	pop($t8)
-	pop($t9)
+# increment register 'r', amount 'amt'
+.macro inc(%r, %amt)
+	addi %r, %r, %amt
 .end_macro
 
-# spill callee-saved registers onto stack
-.macro spillsaved()
-	push($s0)
-	push($s1)
-	push($s2)
-	push($s3)
-	push($s4)
-	push($s5)
-	push($s6)
-	push($s7)
+# decrement register 'r', amount 'amt'
+.macro dec(%r, %amt)
+	addi %r, %r, -%amt
 .end_macro
-
-# load callee-saved registers from stack
-.macro loadsaved()
-	pop($s0)
-	pop($s1)
-	pop($s2)
-	pop($s3)
-	pop($s4)
-	pop($s5)
-	pop($s6)
-	pop($s7)
-.end_macro
-
-# call function with 0 arguments
-.macro call0(%f)
-	jal %f
-.end_macro
-
-# call function with 1 arguments
-.macro call1(%f, %r1)
-	push($a0)
-	move $a0, %r1
-	jal %f
-	pop($a0)
-.end_macro 
-
-# call function with 2 arguments
-.macro call2(%f, %r1, %r2)
-	push($a0)
-	move $a0, %r1
-	push($a1)
-	move $a1, %r2
-	jal %f
-	pop($a0)
-	pop($a1)
-.end_macro 
-
-# call function with 3 arguments
-.macro call3(%f, %r1, %r2, %r3)
-	push($a0)
-	move $a0, %r1
-	push($a1)
-	move $a1, %r2
-	push($a2)
-	move $a2, %r3
-	jal %f
-	pop($a0)
-	pop($a1)
-	pop($a2)
-.end_macro 
-
-# call function with 4 arguments
-.macro call4(%f, %r1, %r2, %r3, %r4)
-	push($a0)
-	move $a0, %r1
-	push($a1)
-	move $a1, %r2
-	push($a2)
-	move $a2, %r3
-	push($a3)
-	move $a3, %r4
-	jal %f
-	pop($a0)
-	pop($a1)
-	pop($a2)
-	pop($a3)
-.end_macro 
 
 ###### SYSCALLS ######
 

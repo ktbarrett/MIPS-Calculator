@@ -1,6 +1,6 @@
 .globl lexer token_values token_ends token_types
 .include "params.h"
-.include "macros.asm"
+.include "macros.h"
 .data
 
 .align 2
@@ -12,25 +12,24 @@ token_types: .space MAX_EXPR_ARRAY_SZ
 
 _lexer_whichop:
 	li $v0, TOK_ASS
-	li $t0, TOK_ADD
-	li $t1, 43 #+
-	cmovne($v0, $t0, $a0, $t1)
-	li $t0, TOK_SUB
-	li $t1, 45 #-
-	cmovne($v0, $t0, $a0, $t1)
-	li $t0, TOK_MUL
-	li $t1, 42 #*
-	cmovne($v0, $t0, $a0, $t1)
-	li $t0, TOK_DIV
-	li $t1, 47 #/
-	cmovne($v0, $t0, $a0, $t1)
+	li $t8, TOK_ADD
+	li $t1, CHR_ADD
+	cmoveq($v0, $t8, $a0, $t1)
+	li $t8, TOK_SUB
+	li $t1, CHR_SUB
+	cmoveq($v0, $t8, $a0, $t1)
+	li $t8, TOK_MUL
+	li $t1, CHR_MUL
+	cmoveq($v0, $t8, $a0, $t1)
+	li $t8, TOK_DIV
+	li $t1, CHR_DIV
+	cmoveq($v0, $t8, $a0, $t1)
 	jr $ra
 
 
 # Tokenizes input string based upon lexing rules
 #
-# @param a0: address of string to lex
-# @return v0: 0 on good lex, 1 if error
+# # @return v0: 0 on good lex, 1 if error
 #
 # Rules:
 #    isspace() -> break, consume space
@@ -46,7 +45,8 @@ lexer:
 	push($s0)
 	push($s1)
 	push($a0)
-	addi $s0, $a0, -1 # to offset addition at beginning of loop
+	la $s0, inputbuf
+	addi $s0, $s0, -1 # to offset addition at beginning of loop
 	move $s1, $zero # token array index
 _lexer_loop:
 	addi $s0, $s0, 1

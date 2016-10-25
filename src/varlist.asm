@@ -1,6 +1,6 @@
 
 .globl getvar setvar initvarlist
-.include "macros.asm"
+.include "macros.h"
 .data
 
 .align 2
