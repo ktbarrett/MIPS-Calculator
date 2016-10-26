@@ -9,7 +9,8 @@
 #	$1: instruction temporary register, redundant
 #	$2: contains return from longjmp argument
 #
-# @return v0: single argument passed to coresponding longjmp
+# @return v0: single result passed from coresponding longjmp argument
+# @param a0: single argument address to store shit
 #
 # given meory location must have 116 bytes allocated
 setjmp:
@@ -45,7 +46,8 @@ setjmp:
 
 # instates registers from preceding call to setjmp
 #
-# @param a0: single result to return from setjmp
+# @param a0: address of setjmp buffer
+# @param a1: single result to return from setjmp
 longjmp:
 	move $v0, $a1 # return from longjmp
 	lw $3, 0($a0)

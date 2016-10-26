@@ -46,12 +46,12 @@ _statemachine: .word _parse_finish, _parse_number, _parse_variable, _parse_plusm
 
 # pushes number in argument to output stack and type in second arguemnt to output type stack
 .macro pushout(%r, %t)
-	push($t0)
+	push($t8)
 	sw %r, output_stack(OUTPUT_IDX)
-	li $t0, %t
-	sw $t0, output_types(OUTPUT_IDX)
+	li $t8, %t
+	sw $t8, output_types(OUTPUT_IDX)
 	inc(OUTPUT_IDX, 4)
-	pop($t0)
+	pop($t8)
 .end_macro
 
 # gets next token type from token_type array, stores in argument, and jumps state depending upon type value

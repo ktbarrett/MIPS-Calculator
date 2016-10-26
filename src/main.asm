@@ -6,9 +6,9 @@
 inputbuf: .space MAX_EXPR_SZ
 copybuf: .space MAX_EXPR_SZ
 PS: .asciiz ">> "
-answer: .asciiz "\t"
-exitcmd: .asciiz "exit"
-quitcmd: .asciiz "quit"
+answer: .asciiz "ans:\t"
+nl: .asciiz "\n"
+quitcmd: .asciiz "quit\n"
 error_messages: .word 0
 
 .text
@@ -24,6 +24,7 @@ main:
 	writeString(answer)
 	lw $t0, output_stack
 	printInteger($t0)
+	writeString(nl)
 	j main
 _error:
 	lw $t0, error_messages($v0)
@@ -31,25 +32,16 @@ _error:
 	j main
 	
 isquit:
-	push($ra)
 	push($a0)
 	push($a1)
-	push($v0)
+	push($ra)
 	la $a0, inputbuf
-	jal strip
-	move $a0, $v0
-	jal lowercase
-	move $a0, $v0
-	la $a1, quitcmd
+	la $a1 quitcmd
 	jal strcmp
 	bne $v0, $zero, _quit
-	la $a1, exitcmd
-	jal strcmp
-	bne $v0, $zero, _quit
-	pop($v0)
+	pop($ra)
 	pop($a1)
 	pop($a0)
-	pop($ra)
 	jr $ra
 _quit:
 	exit()
