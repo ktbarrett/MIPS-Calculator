@@ -29,7 +29,7 @@ eval:
 	bne $zero, $v0, _eval_error
 	li $t0, TOK_LPAR
 	beq $a0, $t0, _eval_notlpar
-	stackadd(operator_stack, OPERATOR_STACK_IDX, TOK_LPAR)
+	stackadd(operator_stack, OPERATOR_STACK_IDX, $t0)
 	j _eval_leave
 _eval_notlpar:
 	li $t0, TOK_RPAR
@@ -48,10 +48,10 @@ _eval_notrpar:
 _eval_notend:
 	li $t0, TOK_NEG
 	beq $a0, $t0, _eval_notneg
-	stackadd(operator_stack, OPERATOR_STACK_IDX, TOK_NEG)
+	stackadd(operator_stack, OPERATOR_STACK_IDX, $t0)
 	j _eval_leave
 _eval_notneg:
-	### handle operator
+	jal handleop
 _eval_leave:
 	pop($a0)
 	pop($s1)
@@ -75,7 +75,8 @@ evalit:
 	# pop operator off stack, do operation, check for left paren or index == 0
 	push($ra)
 _evalit_L1:
-	beq OPERATOR_STACK_IDX, $zero, _evalit_done # if operator stack is empty, finish
+	li $t0, 1
+	beq OPERATOR_STACK_IDX, $t0, _evalit_done # if operator stack is empty, finish
 	stackrem(operator_stack, OPERATOR_STACK_IDX, $t1)
 	li $t0, TOK_LPAR
 	beq $t0, $t1, _evalit_done # if op is left paren, finish
@@ -86,6 +87,47 @@ _evalit_done:
 	pop($ra)
 	jr $ra
 	
+# if stack is empty, push op
+# while (1) {
+#   $t0 = curr prec
+#   $t1 = top of stack prec
+#   $t2 = curr ass
+#   if $t3 == RIGHT
+#     if $t0 < $t1
+#       eval once
+#     else
+#       push op
+#   else //$t3 == LEFT
+#     if $t0 <= $t1
+#       eval once
+#     else
+#       push op
+# }
+handleop:
+	bne $zero, OPERATOR_STACK_IDX, _handleop_L1
+	stackadd(operator_stack, OPERATOR_STACK_IDX, $a0)
+	b _handleop_done
+_handleop_L1:
+	lw $t0, precedence($a0)
+	stackrem(operator_stack, OPERATOR_STACK_IDX, $t3)
+	lw $t1, precedence($t3)
+	lw $t2, associativity($a0)
+	li $t4, OPA_RIGHT
+	bne $t4, $t3, _handleop_lefta
+	bge $t0, $t1, _handleop_noeval
+	b _handleop_eval
+_handleop_lefta:
+	bgt $t0, $t1, _handleop_noeval
+	b _handleop_eval
+_handleop_done:
+	jr $ra
+_handleop_eval:
+	lw $t3, jmptbl($t3)
+	jalr $t3
+	j _handleop_L1
+_handleop_noeval:
+	
+	j _handleop_L1
 
 .macro checktype(%r, %type)
 	li $t8, %type

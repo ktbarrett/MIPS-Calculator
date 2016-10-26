@@ -1,4 +1,4 @@
-.globl inputbuf
+.globl inputbuf main
 .include "macros.h"
 .include "params.h"
 .data
