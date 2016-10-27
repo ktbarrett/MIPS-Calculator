@@ -26,9 +26,9 @@ _statemachine: .word _parse_finish, _parse_number, _parse_variable, _parse_plusm
 
 # gets next token type from token_type array and stores value in argument
 .macro nexttoken()
+	inc(TOK_IDX, 4)
 	move PREV_TOK, CURR_TOK
 	lw CURR_TOK, token_types(TOK_IDX)
-	inc(TOK_IDX, 4)
 .end_macro
 
 # pushes current token to operator stack
@@ -37,31 +37,20 @@ _statemachine: .word _parse_finish, _parse_number, _parse_variable, _parse_plusm
 	inc(OPERATOR_IDX, 4)
 .end_macro
 
-# peek at top operator in the stack, stores in specified register
-.macro peekop(%r)
-	dec(OPERATOR_IDX, 4)
-	lw %r, operator_stack(OPERATOR_IDX)
-	inc(OPERATOR_IDX, 4)
-.end_macro
-
 # pushes number in argument to output stack and type in second arguemnt to output type stack
 .macro pushout(%r, %t)
-	push($t8)
 	sw %r, output_stack(OUTPUT_IDX)
 	li $t8, %t
 	sw $t8, output_types(OUTPUT_IDX)
 	inc(OUTPUT_IDX, 4)
-	pop($t8)
 .end_macro
 
 # gets next token type from token_type array, stores in argument, and jumps state depending upon type value
 .macro dispatch()
 	nexttoken()
-	push($t0)
-	sll $t0, CURR_TOK, 2
-	pop($t0)
-	lw $at, _statemachine(CURR_TOK)
-	jr $at
+	sll $t8, CURR_TOK, 2
+	lw $t8, _statemachine($t8)
+	jr $t8
 .end_macro
 
 
@@ -78,7 +67,7 @@ parser:
 	push($s3)
 	push($s4)
 	# enter state machine
-	move TOK_IDX, $zero # zero index
+	li TOK_IDX, -4 # zero index
 	li CURR_TOK, TOK_START # start with TOK_START token
 	dispatch()
 _parse_leave:
@@ -100,7 +89,7 @@ _parse_finish:
 _parse_plusminus:
 	# if previous token is an operator or the beginning
 	li $t0, TOK_OPS_START
-	bge $t0, PREV_TOK, _parse_plusminus_sign
+	blt $t0, PREV_TOK, _parse_plusminus_sign
 	li $t0, TOK_START
 	beq $t0, PREV_TOK, _parse_plusminus_sign
 	j _parse_op
@@ -108,8 +97,10 @@ _parse_plusminus_sign:
 	li $t0, 1 #sign of number
 	li $t1, TOK_ADD # +
 	li $t2, TOK_SUB # -
+	j asghdjkasd
 _parse_plusminus_L1:
 	nexttoken()
+asghdjkasd:
 	beq CURR_TOK, $t1, _parse_plusminus_L1 # if +, keep going
 	bne CURR_TOK, $t2, _parse_plusminus_notsub # if not -, then no longer +/-, exit loop
 	not $t0, $t0 # found '-', invert 'negate state'
@@ -117,8 +108,8 @@ _parse_plusminus_L1:
 _parse_plusminus_notsub:
 	beq $zero, $t0, _parse_plusminus_skip
 	# if negate state is negative, add a negate operator to stack
-	li $a0, TOK_NEG
-	evaluate($a0)
+	li CURR_TOK, TOK_NEG
+	pushop()
 _parse_plusminus_skip:
 	dispatch()
 

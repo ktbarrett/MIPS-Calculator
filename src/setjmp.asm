@@ -43,6 +43,7 @@ setjmp:
 	sw $29, 104($a0)
 	sw $30, 108($a0)
 	sw $31, 112($a0)
+	jr $ra
 
 # instates registers from preceding call to setjmp
 #

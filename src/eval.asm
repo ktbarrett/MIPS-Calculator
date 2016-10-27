@@ -4,13 +4,13 @@
 .include "stackops.h"
 .data
 
-precedence: .word OPP_ADD, OPP_SUB, OPP_MUL, OPP_DIV, OPP_ASS
-associativity: .word OPA_ADD, OPA_SUB, OPA_MUL, OPA_DIV, OPA_ASS
+precedence: .word OPP_ADD, OPP_SUB, OPP_MUL, OPP_DIV, OPP_ASS, OPP_NEG
+associativity: .word OPA_ADD, OPA_SUB, OPA_MUL, OPA_DIV, OPA_ASS, OPA_NEG
 .align 2
 setjmpbuf: .space 116 # because I'm so fucking done
 
-.eqv OUTPUT_STACK_IDX $s0
-.eqv OPERATOR_STACK_IDX $s1
+.eqv OUTPUT_STACK_IDX $s1
+.eqv OPERATOR_STACK_IDX $s2
 
 .text
 
@@ -21,41 +21,42 @@ setjmpbuf: .space 116 # because I'm so fucking done
 # how operator will modify current state
 #
 eval:
-	push($s0)
-	push($s1)
+	push($ra)
 	push($a0)
 	li $v0, 0
+	push($a0)
+	la $a0, setjmpbuf
 	jal setjmp
+	pop($a0)
 	bne $zero, $v0, _eval_error
 	li $t0, TOK_LPAR
-	beq $a0, $t0, _eval_notlpar
+	bne $a0, $t0, _eval_notlpar
 	stackadd(operator_stack, OPERATOR_STACK_IDX, $t0)
 	j _eval_leave
 _eval_notlpar:
 	li $t0, TOK_RPAR
-	beq $a0, $t0, _eval_notrpar
+	bne $a0, $t0, _eval_notrpar
 	jal evalit
 	bne $zero, $v0, _eval_error
 	j _eval_leave
 _eval_notrpar:
 	li $t0, TOK_END
-	beq $a0, $t0, _eval_notend
+	bne $a0, $t0, _eval_notend
 	jal evalit
 	bne $zero, $v0, _eval_error
-	li $t0, 1 # ensure only one value in stack
+	li $t0, 4 # ensure only one value in stack
 	bne OUTPUT_STACK_IDX, $t0, _eval_error
 	j _eval_leave
 _eval_notend:
 	li $t0, TOK_NEG
-	beq $a0, $t0, _eval_notneg
+	bne $a0, $t0, _eval_notneg
 	stackadd(operator_stack, OPERATOR_STACK_IDX, $t0)
 	j _eval_leave
 _eval_notneg:
 	jal handleop
 _eval_leave:
 	pop($a0)
-	pop($s1)
-	pop($s0)
+	pop($ra)
 	jr $ra
 	
 _eval_error:
@@ -65,7 +66,7 @@ _eval_error:
 
 .data
 
-jmptbl: .word _eval_add, _eval_sub, _eval_mul, _eval_div, _eval_neg
+jmptbl: .word _eval_add, _eval_sub, _eval_mul, _eval_div, _eval_ass, _eval_neg
 
 .text
 
@@ -75,11 +76,12 @@ evalit:
 	# pop operator off stack, do operation, check for left paren or index == 0
 	push($ra)
 _evalit_L1:
-	li $t0, 1
-	beq OPERATOR_STACK_IDX, $t0, _evalit_done # if operator stack is empty, finish
+	beq OPERATOR_STACK_IDX, $zero, _evalit_done # if operator stack is empty, finish
 	stackrem(operator_stack, OPERATOR_STACK_IDX, $t1)
 	li $t0, TOK_LPAR
 	beq $t0, $t1, _evalit_done # if op is left paren, finish
+	addi $t1, $t1, -TOK_OPS_START
+	sll $t1, $t1, 2
 	lw $t0, jmptbl($t1) # otherwise do the operation
 	jalr $t0
 	j _evalit_L1
@@ -122,6 +124,8 @@ _handleop_lefta:
 _handleop_done:
 	jr $ra
 _handleop_eval:
+	addi $t3, $t3, -TOK_OPS_START
+	sll $t3, $t3, 2
 	lw $t3, jmptbl($t3)
 	jalr $t3
 	j _handleop_L1
@@ -199,18 +203,18 @@ _eval_ass:
 	stacktop(output_types, OUTPUT_STACK_IDX, $t2)
 	checktype($t2, TOK_VAR)
 	stackrem(output_stack, OUTPUT_STACK_IDX, $t1)
-	push($s2)
+	push($s4)
 	push($s3)
 	lw $a0, token_values($t1) # load variable start pointer
 	lw $s3, token_ends($t1) # load variable end pointer
-	lb $s2, ($s3) # save old end value
-	sb $zero, ($s2) # make end nul-terminator
+	lb $s4, ($s3) # save old end value
+	sb $zero, ($s4) # make end nul-terminator
 	move $a1, $t0
 	jal setvar # set variable to value
 	bne $v0, $zero, _eval_error
-	sb $s2, ($s3) # reset end
+	sb $s4, ($s3) # reset end
 	pop($s3)
-	pop($s2)
+	pop($s4)
 	jr $ra
 
 _eval_neg:

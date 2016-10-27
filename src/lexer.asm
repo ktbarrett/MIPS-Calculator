@@ -64,6 +64,7 @@ _lexer_notoperator:
 	jal isdigit
 	beq $v0, $zero, _lexer_notnumber
 	jal _lexer_number
+	bne $v0, $zero, _lexer_leave
 	j _lexer_loop
 _lexer_notnumber:
 	# if varname
@@ -83,12 +84,12 @@ _lexer_notvar:
 _lexer_notparens:
 	# is end or shits bork
 	jal isend
-	beq $v0, $zero, _lexer_error
+	beq $v0, $zero, _lexer_notend
 	li $t0, TOK_END
 	sw $t0, token_types($s1)
-	move $v0, $zero # done, load okay and leave
+	li $v0, 0
 	j _lexer_leave
-_lexer_error:
+_lexer_notend:
 	li $v0, 1
 _lexer_leave:
 	pop($a0)
@@ -122,6 +123,8 @@ _lexer_operator:
 _lexer_number:
 	push($ra)
 	push($s2)
+	push($a0)
+	push($a1)
 	move $s2, $s0 # save beginning of string
 	addi $s0, $s0, 1
 	lb $a0, ($s0)
@@ -137,15 +140,21 @@ _lexer_number_L2:
 	bne $v0, $zero, _lexer_number_okay
 	jal isoperator
 	bne $v0, $zero, _lexer_number_okay
-	pop($ra)
-	j _lexer_error # if it isn't, error
+	li $v0, 1
+	j _lexer_number_leave # if it isn't, leave with error
 _lexer_number_okay:
 	li $t0, TOK_NUM
 	sw $t0, token_types($s1)
 	move $a0, $s2
+	move $a1, $s0
 	jal str2num # convert number and save
 	sw $v0, token_values($s1)
 	addi $s1, $s1, 4
+	addi $s0, $s0, -1
+	li $v0, 0
+_lexer_number_leave:
+	pop($a1)
+	pop($a0)
 	pop($s2)
 	pop($ra)
 	jr $ra

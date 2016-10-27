@@ -16,7 +16,7 @@ main:
 	writeString(PS)
 	getString(inputbuf, MAX_EXPR_SZ)
 	jal isquit
-	bne $zero, $v0, _quit
+	beq $zero, $v0, _quit
 	jal lexer
 	bne $v0, $zero, _error
 	jal parser
@@ -30,6 +30,8 @@ _error:
 	lw $t0, error_messages($v0)
 	writeStringReg($t0)
 	j main
+_quit:
+	exit()
 	
 isquit:
 	push($a0)
@@ -38,10 +40,7 @@ isquit:
 	la $a0, inputbuf
 	la $a1 quitcmd
 	jal strcmp
-	bne $v0, $zero, _quit
 	pop($ra)
 	pop($a1)
 	pop($a0)
 	jr $ra
-_quit:
-	exit()
