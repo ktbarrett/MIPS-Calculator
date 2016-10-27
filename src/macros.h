@@ -5,9 +5,28 @@
 # @ param 1: register to push onto stack
 #
 # push word
-.macro push (%r)
+.macro push(%r)
 	addi $sp, $sp, -4
 	sw %r, ($sp)
+.end_macro
+
+.macro push2(%r1, %r2)
+	addi $sp, $sp, -8
+	sw %r1, 0($sp)
+	sw %r2, 4($sp)
+.end_macro
+.macro push3(%r1, %r2, %r3)
+	addi $sp, $sp, -12
+	sw %r1, 0($sp)
+	sw %r2, 4($sp)
+	sw %r3, 8($sp)
+.end_macro
+.macro push4(%r1, %r2, %r3, %r4)
+	addi $sp, $sp, -16
+	sw %r1, 0($sp)
+	sw %r2, 4($sp)
+	sw %r3, 8($sp)
+	sw %r4, 12($sp)
 .end_macro
 
 # Stack Pop
@@ -20,22 +39,49 @@
 	addi $sp, $sp, 4
 .end_macro
 
+.macro pop2(%r1, %r2)
+	lw %r1, 0($sp)
+	lw %r2, 4($sp)
+	addi $sp, $sp, 8
+.end_macro
+.macro pop3(%r1, %r2, %r3)
+	lw %r1, 0($sp)
+	lw %r2, 4($sp)
+	lw %r3, 8($sp)
+	addi $sp, $sp, 12
+.end_macro
+.macro pop4(%r1, %r2, %r3, %r4)
+	lw %r1, 0($sp)
+	lw %r2, 4($sp)
+	lw %r3, 8($sp)
+	lw %r4, 12($sp)
+	addi $sp, $sp, 16
+.end_macro
+
 # Conditional move if equal
 # move %dest <- %src if %r1 == %r2
 .macro cmoveq(%dest, %src, %r1, %r2)
-	push($t0)
-	sne $t0, %r1, %r2
-	movz %dest, %src, $t0
-	pop($t0)
+	sne $t8, %r1, %r2
+	movz %dest, %src, $t8
+.end_macro
+
+.macro cmoveqi(%dest, %imm, %r1, %r2)
+	sne $t8, %r1, %r2
+	li $t9, %imm
+	movz %dest, $t9, $t8
 .end_macro
 
 # Conditional move if not equal
 # move %dest <- %src if %r1 != %r2
 .macro cmovne(%dest, %src, %r1, %r2)
-	push($t0)
-	seq $t0, %r1, %r2
-	movz %dest, %src, $t0
-	pop($t0)
+	seq $t8, %r1, %r2
+	movz %dest, %src, $t8
+.end_macro
+
+.macro cmovnei(%dest, %imm, %r1, %r2)
+	seq $t8, %r1, %r2
+	li $t9, %imm
+	movz %dest, $t9, $t8
 .end_macro
 
 # increment register 'r', amount 'amt'
@@ -46,6 +92,62 @@
 # decrement register 'r', amount 'amt'
 .macro dec(%r, %amt)
 	addi %r, %r, -%amt
+.end_macro
+
+# different load from array with scaled offset commands
+.macro ldb(%dest, %mem, %idx)
+	lb %dest, %mem(%idx)
+.end_macro
+.macro ldh(%dest, %mem, %idx)
+	sll $t8, %idx, 1
+	lh %dest, %mem($t8)
+.end_macro
+.macro ldw(%dest, %mem, %idx)
+	sll $t8, %idx, 2
+	lw %dest, %mem($t8)
+.end_macro
+# with immediate indexes
+.macro ldbi(%dest, %mem, %idxi)
+	li $t8, %idxi
+	lb %dest, %mem($t8)
+.end_macro
+.macro ldhi(%dest, %mem, %idxi)
+	li $t8, %idxi
+	sll $t8, $t8, 1
+	lh %dest, %mem($t8)
+.end_macro
+.macro ldwi(%dest, %mem, %idxi)
+	li $t8, %idxi
+	sll $t8, $t8, 2
+	lw %dest, %mem($t8)
+.end_macro
+
+# different store from array with scaled index commands
+.macro stb(%dest, %mem, %idx)
+	sb %dest, %mem(%idx)
+.end_macro
+.macro sth(%dest, %mem, %idx)
+	sll $t8, %idx, 1
+	sh %dest, %mem($t8)
+.end_macro
+.macro stw(%dest, %mem, %idx)
+	sll $t8, %idx, 2
+	sw %dest, %mem($t8)
+.end_macro
+# with immediate indexes
+.macro stbi(%dest, %mem, %idxi)
+	li $t8, %idxi
+	sb %dest, %mem($t8)
+.end_macro
+.macro sthi(%dest, %mem, %idxi)
+	li $t8, %idxi
+	sll $t8, $t8, 1
+	sh %dest, %mem($t8)
+.end_macro
+.macro stwi(%dest, %mem, %idxi)
+	li $t8, %idxi
+	sll $t8, $t8, 2
+	sw %dest, %mem($t8)
 .end_macro
 
 ###### SYSCALLS ######

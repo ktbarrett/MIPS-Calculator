@@ -1,4 +1,4 @@
-.globl isdigit isspace isvarstart isvarname isoperator isend str2num
+.globl isdigit isspace isvarstart isvarname isoperator isparen isend
 .include "macros.h"
 .include "params.h"
 .data
@@ -37,55 +37,17 @@ isvarname:
 	jr $ra
 	
 isend:
-	li $t0, CHR_NUL
-	seq $t0, $a0, $t0
-	li $v0, CHR_NL
-	seq $v0, $a0, $v0
+	seq $t0, $a0, CHR_NUL
+	seq $v0, $a0, CHR_NL
+	or $v0, $v0, $t0
+	jr $ra
+	
+isparen:
+	seq $t0, $a0, CHR_LPAR
+	seq $v0, $a0, CHR_RPAR
 	or $v0, $v0, $t0
 	jr $ra
 	
 isoperator:
 	bit_array_extract(_isop_bm)
 	jr $ra
-
-# Converts string to integer
-#
-# @param a0: pointer to string to convert
-# @param a1: string end
-#
-# C:
-#    int num = 0
-#    while (isdigit((c = str++)))
-#        num = num * 10 + c - '0';
-str2num:
-	# enter
-	push($ra)
-	push($a0)
-	push($s0)
-	push($s1)
-	# setup variables
-	li $s1, 0
-	move $s0, $a0
-	j _str2num_L1cond
-_str2num_L1:
-	# num = num * 10 + digit - '0'
-	li $t0, 10
-	mul $s1, $s1, $t0
-	addi $t0, $a0, -48 # '0'
-	add $s1, $s1, $t0
-	# condition, c = str++, if !isdigit(c) leave
-_str2num_L1cond:
-	lb $a0, ($s0)
-	addi $s0, $s0, 1
-	jal isdigit
-	bgt $s0, $a1, _str2num_done
-	bne $v0, $zero, _str2num_L1
-_str2num_done:
-	# leave
-	move $v0, $s1
-	pop($s1)
-	pop($s0)
-	pop($a0)
-	pop($ra)
-	jr $ra
-	

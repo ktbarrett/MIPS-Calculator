@@ -1,7 +1,6 @@
 .globl eval
 .include "macros.h"
 .include "params.h"
-.include "stackops.h"
 .data
 
 precedence: .word OPP_ADD, OPP_SUB, OPP_MUL, OPP_DIV, OPP_ASS, OPP_NEG

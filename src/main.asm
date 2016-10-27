@@ -5,42 +5,36 @@
 
 inputbuf: .space MAX_EXPR_SZ
 copybuf: .space MAX_EXPR_SZ
+intro: .asciiz "MEGACOCKSUCKER2000\n"
 PS: .asciiz ">> "
 answer: .asciiz "ans:\t"
 nl: .asciiz "\n"
 quitcmd: .asciiz "quit\n"
-error_messages: .word 0
 
 .text
 main:
+	writeString(intro)
+_main_L1:
 	writeString(PS)
 	getString(inputbuf, MAX_EXPR_SZ)
-	jal isquit
-	beq $zero, $v0, _quit
-	jal lexer
-	bne $v0, $zero, _error
-	jal parser
-	bne $v0, $zero, _error
-	writeString(answer)
-	lw $t0, output_stack
-	printInteger($t0)
-	writeString(nl)
-	j main
-_error:
-	lw $t0, error_messages($v0)
-	writeStringReg($t0)
-	j main
-_quit:
-	exit()
-	
-isquit:
-	push($a0)
-	push($a1)
-	push($ra)
+	# check if user is quiting
 	la $a0, inputbuf
 	la $a1 quitcmd
 	jal strcmp
-	pop($ra)
-	pop($a1)
-	pop($a0)
-	jr $ra
+	beq $zero, $v0, _quit
+	jal lexer
+	bne $v0, $zero, _error
+	#jal parser
+	#bne $v0, $zero, _error
+	#writeString(answer)
+	#lw $t0, output_stack
+	#printInteger($t0)
+	writeString(nl)
+	j _main_L1
+_quit:
+	exit()
+
+_error:
+	move $a0, $v0
+	jal printError
+	j _main_L1
