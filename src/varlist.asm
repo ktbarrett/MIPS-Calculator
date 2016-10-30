@@ -1,4 +1,3 @@
-
 .globl getvar setvar initvarlist
 .include "macros.h"
 .data

@@ -5,7 +5,12 @@
 
 inputbuf: .space MAX_EXPR_SZ
 copybuf: .space MAX_EXPR_SZ
-intro: .asciiz "MEGACOCKSUCKER2000\n"
+intro: .ascii "Simple Calculator\n"
+.ascii "Kaleb Barrett 2016\n\n"
+.ascii "Can evaluate any simple mathematical expression\t+, -, *, /\n"
+.ascii "Respects order of operations and parens\n"
+.ascii "Can assign values to variables\ta = 12\n"
+.asciiz "'quit' to stop evaluation and clear memory\n\n"
 PS: .asciiz ">> "
 answer: .asciiz "ans:\t"
 nl: .asciiz "\n"
@@ -24,8 +29,8 @@ _main_L1:
 	beq $zero, $v0, _quit
 	jal lexer
 	bne $v0, $zero, _error
-	#jal parser
-	#bne $v0, $zero, _error
+	jal parser
+	bne $v0, $zero, _error
 	#writeString(answer)
 	#lw $t0, output_stack
 	#printInteger($t0)

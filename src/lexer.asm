@@ -1,20 +1,29 @@
-.globl lexer token_values token_ends token_types
+.globl lexer token_values token_types var_begin var_end
 .include "params.h"
 .include "macros.h"
+.include "lexer.h"
+.include "chars.h"
 .include "error.h"
 .data
 
 .align 2
+# holds pointers to the beginning and end of variables in the input string
+var_begin: .space MAX_VAR_PER_EXPR
+var_end: .space MAX_VAR_PER_EXPR
+# holds values depending upon type: int if number token, index into var_begin/var_end if variable
 token_values: .space MAX_EXPR_ARRAY_SZ
-token_ends: .space MAX_EXPR_ARRAY_SZ
-token_types: .space MAX_EXPR_ARRAY_SZ
+# types of all the lexer tokens, separates numbers, variables, and every distinct operator
+token_types: .space MAX_EXPR_SZ
 
 .eqv STRING_PTR $s0
 .eqv TOKEN_IDX $s1
+.eqv VAR_IDX $s2
 .eqv THIS_CHAR $a0
 
 .text
 
+# small convience function that determines the token code for
+# each distrinct operator based on it's ascii value
 _lexer_whichop:
 	li $v0, TOK_ASS
 	cmoveqi($v0, TOK_ADD, THIS_CHAR, CHR_ADD)
@@ -34,10 +43,11 @@ _lexer_whichop:
 #    isvarstart() -> consume isvarname()
 #    isend() -> stop
 lexer:
-	push4($ra, $s0, $s1, $a0)
+	push5($ra, $s0, $s1, $s2, $a0)
 	la STRING_PTR, inputbuf
 	dec(STRING_PTR, 1) # to offset inc at beginning
-	move TOKEN_IDX, $zero # token array index
+	li TOKEN_IDX, 0 # token array index
+	li VAR_IDX, 0
 _lexer_loop:
 	# get next char
 	inc(STRING_PTR, 1)
@@ -72,14 +82,14 @@ _lexer_notparens:
 _lexer_notend:
 	li $v0, ERR_UNKNOWNCHAR
 _lexer_leave:
-	pop4($ra, $s0, $s1, $a0)
+	pop5($ra, $s0, $s1, $s2, $a0)
 	jr $ra
 
 # isend() -> capture, leave
 # push end onto token stack and stop
 _lexer_end:
 	li $t0, TOK_END
-	stw($t0, token_types, TOKEN_IDX)
+	stb($t0, token_types, TOKEN_IDX)
 	inc(TOKEN_IDX, 1)
 	li $v0, 0 # ensure valid lex is achieved
 	j _lexer_leave
@@ -89,7 +99,7 @@ _lexer_end:
 _lexer_paren:
 	li $t0, TOK_LPAR
 	cmoveqi($t0, TOK_RPAR, THIS_CHAR, CHR_RPAR)
-	stw($t0, token_types, TOKEN_IDX)
+	stb($t0, token_types, TOKEN_IDX)
 	inc(TOKEN_IDX, 1)
 	j _lexer_loop
 	
@@ -98,7 +108,7 @@ _lexer_paren:
 # push appropriate token value onto type stack and continue
 _lexer_operator:
 	jal _lexer_whichop
-	stw($v0, token_types, TOKEN_IDX)
+	stb($v0, token_types, TOKEN_IDX)
 	inc(TOKEN_IDX, 1)
 	j _lexer_loop
 
@@ -133,7 +143,7 @@ _lexer_number_valid: # valid digit
 	pop($a0) # pop saved beginning string pointer into a0 for str2num
 	jal str2num
 	li $t0, TOK_NUM
-	stw($t0, token_types, TOKEN_IDX)
+	stb($t0, token_types, TOKEN_IDX)
 	stw($v0, token_values, TOKEN_IDX)
 	inc(TOKEN_IDX, 1)
 	# decrement string pointer to last digit to continue
@@ -147,7 +157,7 @@ _lexer_number_valid: # valid digit
 # in token_ends, and TOK_VAR in token_types
 _lexer_variable:
 	# save string start in lexer_values for later use by the parser
-	stw(STRING_PTR, token_values, TOKEN_IDX)
+	stw(STRING_PTR, var_begin, VAR_IDX)
 	# while next character is valid in variable name ( while(isvarname(str++)) )
 _lexer_variable_L1:
 	inc(STRING_PTR, 1)
@@ -155,11 +165,14 @@ _lexer_variable_L1:
 	jal isvarname
 	beq $v0, 1, _lexer_variable_L1
 	# save variable string end and type
-	stw(STRING_PTR, token_ends, TOKEN_IDX)
+	stw(STRING_PTR, var_end, VAR_IDX)
 	li $t0, TOK_VAR
-	stw($t0, token_types, TOKEN_IDX)
-	inc(TOKEN_IDX, 1) # next token
+	stb($t0, token_types, TOKEN_IDX)
+	# store temp variable index in token_values and increment variable index
+	stw(VAR_IDX, token_values, TOKEN_IDX)
+	inc(VAR_IDX, 1)
 	# decrement string pointer to last digit to continue
 	dec(STRING_PTR, 1)
 	# reloading THIS_CHAR is done by lexer_loop 
+	inc(TOKEN_IDX, 1)
 	j _lexer_loop

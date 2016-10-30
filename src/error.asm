@@ -3,10 +3,12 @@
 .data
 
 error: .asciiz "Error: "
-err_unknownchar: .asciiz "Unkown character\n"
-err_baddigit: .asciix "Poorly formed digit\n"
+err_unknownchar: .asciiz "Unknown character\n"
+err_baddigit: .asciiz "Poorly formed digit\n"
+err_missinglpar: .asciiz "Mismatched parens; missing left paren\n"
+err_missingrpar: .asciiz "Mismatched parens; missing right paren\n"
 
-error_messages: .word 0 err_unknownchar err_baddigit
+error_messages: .word 0 err_unknownchar err_baddigit, err_missinglpar, err_missingrpar
 
 .text
 

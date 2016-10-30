@@ -1,6 +1,7 @@
 .globl isdigit isspace isvarstart isvarname isoperator isparen isend
 .include "macros.h"
 .include "params.h"
+.include "chars.h"
 .data
 
 # bit maps created with python script

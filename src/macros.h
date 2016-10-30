@@ -9,7 +9,7 @@
 	addi $sp, $sp, -4
 	sw %r, ($sp)
 .end_macro
-
+# multiple register push
 .macro push2(%r1, %r2)
 	addi $sp, $sp, -8
 	sw %r1, 0($sp)
@@ -28,6 +28,14 @@
 	sw %r3, 8($sp)
 	sw %r4, 12($sp)
 .end_macro
+.macro push5(%r1, %r2, %r3, %r4, %r5)
+	addi $sp, $sp, -20
+	sw %r1, 0($sp)
+	sw %r2, 4($sp)
+	sw %r3, 8($sp)
+	sw %r4, 12($sp)
+	sw %r5, 16($sp)
+.end_macro
 
 # Stack Pop
 #
@@ -38,7 +46,7 @@
 	lw %r, 0($sp)
 	addi $sp, $sp, 4
 .end_macro
-
+# multiple register pops
 .macro pop2(%r1, %r2)
 	lw %r1, 0($sp)
 	lw %r2, 4($sp)
@@ -56,6 +64,14 @@
 	lw %r3, 8($sp)
 	lw %r4, 12($sp)
 	addi $sp, $sp, 16
+.end_macro
+.macro pop5(%r1, %r2, %r3, %r4, %r5)
+	lw %r1, 0($sp)
+	lw %r2, 4($sp)
+	lw %r3, 8($sp)
+	lw %r4, 12($sp)
+	lw %r5, 16($sp)
+	addi $sp, $sp, 20
 .end_macro
 
 # Conditional move if equal
@@ -106,21 +122,6 @@
 	sll $t8, %idx, 2
 	lw %dest, %mem($t8)
 .end_macro
-# with immediate indexes
-.macro ldbi(%dest, %mem, %idxi)
-	li $t8, %idxi
-	lb %dest, %mem($t8)
-.end_macro
-.macro ldhi(%dest, %mem, %idxi)
-	li $t8, %idxi
-	sll $t8, $t8, 1
-	lh %dest, %mem($t8)
-.end_macro
-.macro ldwi(%dest, %mem, %idxi)
-	li $t8, %idxi
-	sll $t8, $t8, 2
-	lw %dest, %mem($t8)
-.end_macro
 
 # different store from array with scaled index commands
 .macro stb(%dest, %mem, %idx)
@@ -134,21 +135,7 @@
 	sll $t8, %idx, 2
 	sw %dest, %mem($t8)
 .end_macro
-# with immediate indexes
-.macro stbi(%dest, %mem, %idxi)
-	li $t8, %idxi
-	sb %dest, %mem($t8)
-.end_macro
-.macro sthi(%dest, %mem, %idxi)
-	li $t8, %idxi
-	sll $t8, $t8, 1
-	sh %dest, %mem($t8)
-.end_macro
-.macro stwi(%dest, %mem, %idxi)
-	li $t8, %idxi
-	sll $t8, $t8, 2
-	sw %dest, %mem($t8)
-.end_macro
+
 
 ###### SYSCALLS ######
 
