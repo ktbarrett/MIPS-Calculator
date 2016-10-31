@@ -5,20 +5,27 @@
 .align 2
 _varlist_ptr: .space 4
 _varlist_end: .space 4
+_varlist_initialized: .byte 1
 
 .text
 
+.macro initialize()
+	lb $t8, _varlist_initialized
+	beqz $8, _varlist_initialized_okay
+	jal initvarlist
+	sb $zero, _varlist_initialized
+_varlist_initialized_okay:
+.end_macro
+
 # initializes varlist
 initvarlist:
-	push($a0)
-	push($v0)
+	push2($a0, $v0)
 	li $v0, 9
 	li $a0, 0
 	syscall
 	sw $v0, _varlist_ptr
 	sw $v0, _varlist_end
-	pop($v0)
-	pop($a0)
+	pop2($a0, $v0)
 	jr $ra
 
 # Find Variable (non-extern)
@@ -40,11 +47,7 @@ initvarlist:
 #    }
 _findvar:
 	# save
-	push($ra)
-	push($s0)
-	push($s1)
-	push($a0)
-	push($a1)
+	push5($ra, $s0, $s1, $a0, $a1)
 	move $s1, $a0
 	lw $a0, _varlist_ptr
 	lw $s0, _varlist_end
@@ -73,11 +76,7 @@ _findvar_found:
 	li $v0, 0
 	addi $v1, $a0, -4
 _findvar_exit:	# reload
-	pop($a1)
-	pop($a0)
-	pop($s1)
-	pop($s0)
-	pop($ra)
+	pop5($ra, $s0, $s1, $a0, $a1)
 	jr $ra
 	
 # Get Variable
@@ -96,6 +95,7 @@ _findvar_exit:	# reload
 #    return {err, ???}
 getvar:
 	push($ra)
+	initialize()
 	jal _findvar
 	bne $v0, $zero, _getvar_L1
 	lw $v1, ($v1)
@@ -121,8 +121,8 @@ _getvar_L1:
 #    *loc = value;
 #
 setvar: # save
-	push($ra)
-	push($a1)
+	push2($ra, $a1)
+	initialize()
 	jal _findvar
 	beq $v0, $zero, _setvar_L1
 	## alloc new space
@@ -148,7 +148,6 @@ setvar: # save
 	move $a0, $a1 # src back to $a0
 	move $v1, $v0
 _setvar_L1: # reload
-	pop($a1)
-	pop($ra)
+	pop2($ra, $a1)
 	sw $a1, ($v1) # save new integer in variable node
 	jr $ra

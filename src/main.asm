@@ -29,6 +29,8 @@ _main_L1:
 	beq $zero, $v0, _quit
 	jal lexer
 	bne $v0, $zero, _error
+	jal validater
+	bne $v0, $zero, _error
 	jal parser
 	bne $v0, $zero, _error
 	#writeString(answer)

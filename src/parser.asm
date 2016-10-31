@@ -122,10 +122,17 @@ _parse_rpar_error:
 	j _parser_leave
 
 
+_parse_variable:
+	ldw($t1, token_values, TOKEN_IDX)
+	li $t0, TOK_VAR
+	pushout($t0, $t1)
+	dispatch()
+
+
 # see if variable is defined yet, if it is push value onto output
 # stack and number onto type stack. If not defined yet, push
 # variable type onto type stack and variable index onto value stack 
-_parse_variable:
+_parse_variable_2:
 	ldw($t0, token_values, TOKEN_IDX)
 	ldw($a0, var_begin, $t0)
 	ldw($t1, var_end, $t0)
