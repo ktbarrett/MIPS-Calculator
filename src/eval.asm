@@ -53,22 +53,14 @@ _stackokay:
 .macro checknum(%value, %type)
 	checktype(%value, %type)
 	beq %type, TOK_NUM, _numokay
-	li $v0, ERR_MISFORMED_STATEMENT
-	j _eval_leave
-_numokay:
-.end_macro
-
-.macro checkvar(%value, %type)
-	checktype()
-	beq %type, TOK_VAR, _numokay
-	li $v0, ERR_MISFORMED_STATEMENT
+	li $v0, ERR_UNDEFINED_VAR
 	j _eval_leave
 _numokay:
 .end_macro
 
 .macro dispatch()
 	inc(OUTPUT_IDX, 1)
-	ldb(CURR_V, output_stack, OUTPUT_IDX)
+	ldw(CURR_V, output_stack, OUTPUT_IDX)
 	ldb(CURR_T, output_types, OUTPUT_IDX)
 	ldw($t0, _eval_jmptbl, CURR_T)
 	jr $t0
@@ -86,16 +78,33 @@ _numokay:
 # if the type is variable and the variable is defined then return
 # value associated with variable and type TOK_NUM
 checktype:
+	push($ra)
 	# if number, return
 	bne $a1, TOK_NUM, _checktype_L1
-	move $v0, $a0
-	move $v1, $a1
-	jr $ra
+	j _checktype_issame
 _checktype_L1:
 	# if variable, test if defined
-	#TODO: #### FINISH THIS SHIT ####
-_checktype_isvar:
-	li $v0, 0
+	#get beginning and end of variable name
+	ldw($t0, var_begin, $a0)
+	ldw($t1, var_end, $a0)
+	# attempt to get associated value
+	push2($a0, $a1)
+	move $a0, $t0
+	move $a1, $t1
+	jal getvar
+	pop2($a0, $a1)
+	# check if defined (v0 == 0)
+	bnez $v0, _checktype_issame
+	# defined, return type number and associated value
+	move $v0, $v1
+	li $v1, TOK_NUM
+	pop($ra)
+	jr $ra
+_checktype_issame:
+	# not defined, is variable
+	move $v0, $a0
+	move $v1, $a1
+	pop($ra)
 	jr $ra
 
 
@@ -105,14 +114,14 @@ _checktype_isvar:
 # @return v0: 0 indicates no error, else error and errorcode is the value
 # @return v1: result of evaluation
 eval:
-	push5($ra, $s0, $s1, $s2, $v1)
+	push4($ra, $s0, $s1, $s2)
 	push5($s3, $s4, $s5, $a0, $a1)
 	li EVAL_IDX, 0
 	li OUTPUT_IDX, -1
 	dispatch()
 _eval_leave:
 	pop5($s3, $s4, $s5, $a0, $a1)
-	pop5($ra, $s0, $s1, $s2, $v1)
+	pop4($ra, $s0, $s1, $s2)
 	jr $ra
 
 
@@ -171,7 +180,6 @@ _eval_add:
 	add $t0, ARG1_V, ARG2_V
 	li $t1, TOK_NUM
 	pusheval($t0, $t1)
-	li $v0, ERR_NONE
 	dispatch()
 
 
@@ -185,7 +193,6 @@ _eval_sub:
 	sub $t0, ARG2_V, ARG1_V
 	li $t1, TOK_NUM
 	pusheval($t0, $t1)
-	li $v0, ERR_NONE
 	dispatch()
 
 	
@@ -199,7 +206,6 @@ _eval_mul:
 	mul $t0, ARG1_V, ARG2_V
 	li $t1, TOK_NUM
 	pusheval($t0, $t1)
-	li $v0, ERR_NONE
 	dispatch()
 
 	
@@ -230,5 +236,27 @@ _eval_neg:
 	dispatch()
 
 
+# performs assignment of value to variable
+#
+# top of stack must be a number, second must be a variable
+# if type checks work out, set variable equal to argument
+# Finally, push the value back on top of the stack
 _eval_ass:
-	#TODO: #### FINISH THIS SHIT ####
+	checkstackempty()
+	popeval(ARG1_V, ARG1_T)
+	checknum(ARG1_V, ARG1_T)
+	checkstackempty()
+	popeval(ARG2_V, ARG2_T)
+	# is second argument variable?
+	beq ARG2_T, TOK_VAR, _eval_ass_typeokay
+	li $v0, ERR_ASSIGN_TO_NONVAR
+	j _eval_leave
+_eval_ass_typeokay:
+	# setup and call setvar to set variable name equal to value
+	ldw($a0, var_begin, ARG2_V)
+	ldw($a1, var_end, ARG2_V)
+	move $a2, ARG1_V
+	jal setvar
+	# finally, put assigned value back on stack
+	pusheval(ARG1_V, ARG1_T)
+	dispatch()

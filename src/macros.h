@@ -148,43 +148,34 @@
 # but it's definitely UB.
 #
 .macro writeString (%string)
-	push($a0)
-	push($v0)
+	push2($a0, $v0)
 	la $a0, %string
 	li $v0, 4
 	syscall
-	pop($v0)
-	pop($a0)
+	pop2($a0, $v0)
 .end_macro
 .macro writeStringReg(%stringr)
-	push($a0)
-	push($v0)
+	push2($a0, $v0)
 	move $a0, %stringr
 	li $v0, 4
 	syscall
-	pop($v0)
-	pop($a0)
+	pop2($a0, $v0)
 .end_macro
 
 # Get String from Console
 #
 # @param 1: buffer to place string into
 # @param 2: maximum length of string to grab
-# @clobbers: v0, a0, a1
 #
 # caveat: length specification acts like fgets. Buffer overruns are undefined behavior.
 #
 .macro getString(%string, %len)
-	push($a0)
-	push($a1)
-	push($v0)
+	push3($a0, $a1, $v0)
 	la $a0, %string
 	li $a1, %len
 	li $v0, 8
 	syscall
-	pop($v0)
-	pop($a1)
-	pop($a0)
+	pop3($a0, $a1, $v0)
 .end_macro
 
 # Exit without return value
@@ -196,7 +187,6 @@
 # Get Integer from Console
 #
 # @param 1: register to place integer into
-# @clobbers: v0
 #
 .macro getInteger (%r)
 	push($v0)
@@ -209,14 +199,25 @@
 # Print Integer to Console
 #
 # @param 1: register holding integer to print
-# @clobbers: v0, a0
 #
 .macro printInteger (%r)
-	push($a0)
-	push($v0)
+	push2($a0, $v0)
 	move $a0, %r
 	li $v0, 1
 	syscall
-	pop($v0)
-	pop($a0)
+	pop2($a0, $v0)
+.end_macro
+
+# Allocate memory on the heap using sbrk
+#
+# @param 1: desination address of pointer to beginning of new block
+# @param 2: number of bytes to allocate
+#
+.macro allocate(%dest, %amt)
+	push2($a0, $v0)
+	move $a0, %amt
+	li $v0, 9
+	syscall
+	move %dest, $v0
+	pop2($a0, $v0)
 .end_macro

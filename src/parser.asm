@@ -129,35 +129,6 @@ _parse_variable:
 	dispatch()
 
 
-# see if variable is defined yet, if it is push value onto output
-# stack and number onto type stack. If not defined yet, push
-# variable type onto type stack and variable index onto value stack 
-_parse_variable_2:
-	ldw($t0, token_values, TOKEN_IDX)
-	ldw($a0, var_begin, $t0)
-	ldw($t1, var_end, $t0)
-	# swap byte at location of variable end with nul-term so getvar works
-	lb $t0, ($t1)
-	push2($t0, $t1)
-	sb $zero, ($t1) # place nul terminator
-	jal getvar
-	pop2($t0, $t1)
-	sb $t0, ($t1) # save old byte value back, probably not necessary
-	# check if found
-	beqz $v0, _parse_variable_found
-	# not found push variable onto output
-	ldw($t1, token_values, TOKEN_IDX)
-	li $t0, TOK_VAR
-	pushout($t0, $t1)
-	j _parse_variable_done
-_parse_variable_found:
-	# found, push num to type stack and value in v0 to value stack
-	li $t0, TOK_NUM
-	pushout($t0, $v1)
-_parse_variable_done:
-	dispatch()
-
-
 # returns truthness of previous operation being an operation that
 # requires op to be parsed as a sign
 #
@@ -212,9 +183,9 @@ _parse_sign_L2:
 	beqz $t1, _parse_sign_notneg # if negate state is 0, effective sign is 0, skip 'neg' generation
 	# generate a negate operation
 	# since negate is always the lowest precedence operation and there is never another
-	# negate before a negate, just put immediately onto output stack
+	# negate before a negate, put onto op stack
 	li $t0, TOK_NEG
-	pushout($t0, $zero)
+	pushop($t0)
 _parse_sign_notneg:
 	dec(TOKEN_IDX, 1) # now pointing to one past end of current token sequence, dispatch will increment again
 	dispatch()
