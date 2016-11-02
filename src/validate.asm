@@ -48,10 +48,13 @@ _validate_L1:
 	inc(TOK_ARR_IDX, 1)
 	move PREV_TOK, CURR_TOK
 	ldb(CURR_TOK, token_types, TOK_ARR_IDX)
-	bne CURR_TOK, TOK_ASS, _validate_notass
-	# if assignemnt, check if index is 1 (2nd position, only valid place for assignment)
-	bne TOK_ARR_IDX, 1, _validate_error
-_validate_notass:
+	bne CURR_TOK, TOK_ASS, _validate_assignokay
+	# if assignment, check if index is 1 (assignment as beginning), or if two tokens previous is left paren
+	beq TOK_ARR_IDX, 1, _validate_assignokay
+	addi $t0, TOK_ARR_IDX, -2
+	ldb($t1, token_types, $t0)
+	bne $t1, TOK_LPAR, _validate_error
+_validate_assignokay:
 	jal bitindexmatrix
 	beqz $v0, _validate_L1
 _validate_error:
