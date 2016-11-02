@@ -3,7 +3,7 @@
 .eqv OPP_SUB 3
 .eqv OPP_MUL 4
 .eqv OPP_DIV 4
-.eqv OPP_ASS 5
+.eqv OPP_ASS 1
 .eqv OPP_NEG 2
 .eqv OPP_LPAR 0
 # lpar precedence must be less than everything so nothing can pop it off the stack
@@ -16,6 +16,12 @@
 # grammar is valid, it is not easily verifiable, so the assignemnt operator
 # has a high precedence and to grab more greedily, use parentheses to surround
 # the expression you to evaluate for the assignment.
+#### ACTUALLY SCRATCH THAT
+# people expect writing 'a = 12 - 9' to set a to 3, not 12
+# this is an actual corner case, that has not been handled yet. This would require an
+# addition to the validator, to ensure that the token preceding the variable
+# preceding assignment operator is either the beginning of the expression, or
+# a left parentheses. Fun stuff.
 
 ### OPERATOR ASSOCIATIVITY
 .eqv OPA_LEFT 0
