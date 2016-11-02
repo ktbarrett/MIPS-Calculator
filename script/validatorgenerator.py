@@ -30,9 +30,3 @@ bytearray = [sum([2**i for i, x in enumerate(n8) if x]) for n8 in bytes]
 # print label
 print("_validity_matrix: .byte " + " ".join(hex(x) for x in bytearray))
 
-names = ["\\0", "1", "a", "+", "-", "*", "/", "=", "-", "(", ")"]
-good = []
-for i in filter(lambda x: validityMatrix[x[0]][x[1]] and validityMatrix[x[1]][x[2]] and not 8 in x, product(range(len(validityMatrix)), repeat=3)):
-    good.append(" ".join(map(lambda x: names[x], i)))
-print(len(good))
-print("\n".join(good))
