@@ -9,7 +9,7 @@ _validity_matrix: .byte 0x0 0xc8 0x63 0x3e 0x3d 0xe6 0x31 0x8f 0x79 0xcc 0x63 0x
 .eqv _validity_matrix_R 11
 .eqv _validity_matrix_C 11
 
-.eqv TOKEN_IDX $s0
+.eqv TOK_ARR_IDX $s0
 .eqv CURR_TOK $a0
 .eqv PREV_TOK $a1
 
@@ -41,12 +41,12 @@ bitindexmatrix:
 validater:
 	push4($ra, $s0, $a1, $a0)
 	li PREV_TOK, 0
-	ldb(CURR_TOK, token_types, TOKEN_IDX)
+	ldb(CURR_TOK, token_types, TOK_ARR_IDX)
 _validate_L1:
 	beq CURR_TOK, TOK_END, _validate_L2
-	inc(TOKEN_IDX, 1)
+	inc(TOK_ARR_IDX, 1)
 	move PREV_TOK, CURR_TOK
-	ldb(CURR_TOK, token_types, TOKEN_IDX)
+	ldb(CURR_TOK, token_types, TOK_ARR_IDX)
 	jal bitindexmatrix
 	beqz $v0, _validate_L1
 	li $v0, ERR_MISFORMED_STATEMENT

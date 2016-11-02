@@ -17,7 +17,7 @@ associativity: .byte 0, 0, 0, OPA_ADD, OPA_SUB, OPA_MUL, OPA_DIV, OPA_ASS, OPA_N
 
 _parser_jmptbl: .word _parse_finish, _parse_number, _parse_variable, _parse_plusminus, _parse_plusminus, _parse_op, _parse_op, _parse_op, _parse_op, _parse_lpar, _parse_rpar
 
-.eqv TOKEN_IDX $s0
+.eqv TOK_IDX $s0
 .eqv OUTPUT_IDX $s1
 .eqv OPERATOR_IDX $s2
 
@@ -25,8 +25,8 @@ _parser_jmptbl: .word _parse_finish, _parse_number, _parse_variable, _parse_plus
 
 # get next token and use it to jump to next part of state machine
 .macro dispatch()
-	inc(TOKEN_IDX, 1)
-	ldb($t0, token_types, TOKEN_IDX)
+	inc(TOK_IDX, 1)
+	ldb($t0, token_types, TOK_IDX)
 	ldw($t0, _parser_jmptbl, $t0)
 	jr $t0
 .end_macro
@@ -53,7 +53,7 @@ parser:
 	push4($ra, $a0, $a1, $v1)
 	push3($s0, $s1, $s2)
 	# setup variables
-	li TOKEN_IDX, -1
+	li TOK_IDX, -1
 	li OUTPUT_IDX, 0
 	li OPERATOR_IDX, 0
 	# inital dispatch
@@ -66,7 +66,7 @@ _parser_leave:
 
 # push number type and value onto appropriate output stacks
 _parse_number:
-	ldw($t1, token_values, TOKEN_IDX) # number value
+	ldw($t1, token_values, TOK_IDX) # number value
 	li $t0, TOK_NUM # number type
 	pushout($t0, $t1)
 	dispatch()
@@ -123,7 +123,7 @@ _parse_rpar_error:
 
 
 _parse_variable:
-	ldw($t1, token_values, TOKEN_IDX)
+	ldw($t1, token_values, TOK_IDX)
 	li $t0, TOK_VAR
 	pushout($t0, $t1)
 	dispatch()
@@ -157,9 +157,9 @@ _parse_plusminus_validop:
 # parse the plus or minus as an operator
 _parse_plusminus:
 	# if beginning of string, parse as sign
-	beqz TOKEN_IDX, _parse_sign
+	beqz TOK_IDX, _parse_sign
 	# if preceding token is valid operator, parse as sign
-	addi $t0, TOKEN_IDX, -1
+	addi $t0, TOK_IDX, -1
 	ldb($a0, token_types, $t0) # t0 contains previous token
 	jal _parse_plusminus_validop
 	beqz $v0, _parse_sign
@@ -169,11 +169,11 @@ _parse_plusminus:
 
 # picks up as many plus and minus and makes effective sign
 _parse_sign:
-	dec(TOKEN_IDX, 1)
+	dec(TOK_IDX, 1)
 	li $t1, 0 # negate state
 _parse_sign_L1:
-	inc(TOKEN_IDX, 1)
-	ldb($t0, token_types, TOKEN_IDX)
+	inc(TOK_IDX, 1)
+	ldb($t0, token_types, TOK_IDX)
 	beq $t0, TOK_ADD, _parse_sign_L1 # if token is +, skip
 	bne $t0, TOK_SUB, _parse_sign_L2 # if token not -, token isn't +/-: end
 	# token is -
@@ -187,7 +187,7 @@ _parse_sign_L2:
 	li $t0, TOK_NEG
 	pushop($t0)
 _parse_sign_notneg:
-	dec(TOKEN_IDX, 1) # now pointing to one past end of current token sequence, dispatch will increment again
+	dec(TOK_IDX, 1) # now pointing to one past end of current token sequence, dispatch will increment again
 	dispatch()
 
 
@@ -215,7 +215,7 @@ _parse_sign_notneg:
 #            break
 # }
 _parse_op:
-	ldb($t0, token_types, TOKEN_IDX)
+	ldb($t0, token_types, TOK_IDX)
 _parse_op_L1:
 	beqz OPERATOR_IDX, _parse_op_done
 	# get previous operator
