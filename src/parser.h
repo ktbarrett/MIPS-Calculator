@@ -3,11 +3,19 @@
 .eqv OPP_SUB 3
 .eqv OPP_MUL 4
 .eqv OPP_DIV 4
-.eqv OPP_ASS 1
+.eqv OPP_ASS 5
 .eqv OPP_NEG 2
 .eqv OPP_LPAR 0
-# lpar precedence must be greater than everything so it doesn't cause anything
-# to be popped off operator stack
+# lpar precedence must be less than everything so nothing can pop it off the stack
+# Ahhhh, the precedence of assignment. Having the assignment operator higher than 
+# all other operators and lower than all other operators makes sense. If the precedence
+# is larger, it grabs non-greedily; and if it's lower than everything it grabs
+# greedily. However, making the precdence low creates an entirely different
+# grammar, one that the current validator cannot prove valid. If one doesn't surround
+# assignemnts in parentheses it fails to parse correctly. So, although the
+# grammar is valid, it is not easily verifiable, so the assignemnt operator
+# has a high precedence and to grab more greedily, use parentheses to surround
+# the expression you to evaluate for the assignment.
 
 ### OPERATOR ASSOCIATIVITY
 .eqv OPA_LEFT 0
