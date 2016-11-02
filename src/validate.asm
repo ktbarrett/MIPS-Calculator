@@ -41,14 +41,20 @@ bitindexmatrix:
 validater:
 	push4($ra, $s0, $a1, $a0)
 	li PREV_TOK, 0
+	li TOK_ARR_IDX, 0
 	ldb(CURR_TOK, token_types, TOK_ARR_IDX)
 _validate_L1:
 	beq CURR_TOK, TOK_END, _validate_L2
 	inc(TOK_ARR_IDX, 1)
 	move PREV_TOK, CURR_TOK
 	ldb(CURR_TOK, token_types, TOK_ARR_IDX)
+	bne CURR_TOK, TOK_ASS, _validate_notass
+	# if assignemnt, check if index is 1 (2nd position, only valid place for assignment)
+	bne TOK_ARR_IDX, 1, _validate_error
+_validate_notass:
 	jal bitindexmatrix
 	beqz $v0, _validate_L1
+_validate_error:
 	li $v0, ERR_MISFORMED_STATEMENT
 _validate_L2:
 	pop4($ra, $s0, $a1, $a0)
